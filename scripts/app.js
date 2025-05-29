@@ -56,23 +56,30 @@ function waitForLibs(cb) {
 function setupInventoryFeatures() {
     console.log('setupInventoryFeatures triggered');
     console.log('setupInventoryFeatures: QRCode:', typeof QRCode, 'Html5Qrcode:', typeof Html5Qrcode);
-    // --- LocalStorage helpers ---
-    const STORAGE_KEY = 'inventory';
-    const getInventory = () => {
-        const val = localStorage.getItem(STORAGE_KEY);
-        console.log('getInventory called, value:', val);
-        return JSON.parse(val || '[]');
+    // --- LocalStorage helpers replaced with API helpers ---
+    const getInventory = async () => {
+        try {
+            const res = await fetch('/.netlify/functions/get-inventory');
+            return await res.json();
+        } catch {
+            return [];
+        }
     };
-    const setInventory = (data) => {
-        console.log('setInventory called, data:', data);
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+    const setInventory = async (data) => {
+        try {
+            await fetch('/.netlify/functions/set-inventory', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+            });
+        } catch {}
     };
 
     // --- Render Inventory List ---
-    function renderList() {
+    async function renderList() {
         const list = document.getElementById('equipment-list');
         if (!list) return;
-        const items = getInventory();
+        const items = await getInventory();
         list.innerHTML = '';
         if (!items.length) {
             const li = document.createElement('li');
@@ -94,7 +101,7 @@ function setupInventoryFeatures() {
     const form = document.getElementById('add-equipment-form');
     if (form._handlerAttached) return; // Prevent double binding
     form._handlerAttached = true;
-    form.addEventListener('submit', function(e) {
+    form.addEventListener('submit', async function(e) {
         e.preventDefault(); // CRITICAL: prevent reload
         console.log('Form submitted'); // TROUBLESHOOTING
         const name = document.getElementById('equip-name').value.trim();
@@ -103,25 +110,25 @@ function setupInventoryFeatures() {
         const date = document.getElementById('assign-date').value;
         console.log('Form values:', { name, id, user, date });
         if (!name || !id || !user || !date) return;
-        const items = getInventory();
+        const items = await getInventory();
         items.push({ name, id, user, date });
-        setInventory(items);
+        await setInventory(items);
         renderList();
         showQRModal({ name, id, user, date });
         this.reset();
     });
 
     // --- Remove/Show QR Handler ---
-    document.getElementById('equipment-list').onclick = function(e) {
+    document.getElementById('equipment-list').onclick = async function(e) {
         if (e.target.classList.contains('remove-eq')) {
             const idx = +e.target.dataset.idx;
-            const items = getInventory();
+            const items = await getInventory();
             items.splice(idx, 1);
-            setInventory(items);
+            await setInventory(items);
             renderList();
         } else if (e.target.classList.contains('show-qr')) {
             const idx = +e.target.dataset.idx;
-            const items = getInventory();
+            const items = await getInventory();
             showQRModal(items[idx]);
         }
     };
@@ -135,8 +142,8 @@ function setupInventoryFeatures() {
         exportBtn.textContent = 'Export Inventory';
         exportBtn.style.marginRight = '0.5rem';
         section.insertBefore(exportBtn, section.firstChild);
-        exportBtn.onclick = function() {
-            const items = getInventory();
+        exportBtn.onclick = async function() {
+            const items = await getInventory();
             const blob = new Blob([JSON.stringify(items, null, 2)], { type: 'application/json' });
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
@@ -160,15 +167,15 @@ function setupInventoryFeatures() {
             const input = document.createElement('input');
             input.type = 'file';
             input.accept = '.json,application/json';
-            input.onchange = function(e) {
+            input.onchange = async function(e) {
                 const file = e.target.files[0];
                 if (!file) return;
                 const reader = new FileReader();
-                reader.onload = function(evt) {
+                reader.onload = async function(evt) {
                     try {
                         const data = JSON.parse(evt.target.result);
                         if (Array.isArray(data)) {
-                            setInventory(data);
+                            await setInventory(data);
                             renderList();
                             alert('Inventory imported successfully!');
                         } else {
@@ -261,13 +268,65 @@ function setupInventoryFeatures() {
                         });
                     }, 1200);
                 },
-                error => {}
-            );
+                error => {
+                    console.error("QR SCAN ERROR:", error);
+                }
+            ).catch(err => {
+                console.error("Camera start failed:", err);
+                alert("Failed to start camera. Please check camera permissions or try another device.");
+            });
         };
         closeSerialModal.onclick = function() {
             serialModal.style.display = 'none';
             if (serialQrReader) {
                 serialQrReader.stop().catch(()=>{});
+            }
+        };
+    }
+
+    // --- Equipment QR Scan Button Logic ---
+    const openEquipQrScanBtn = document.getElementById('open-equip-qr-scan');
+    const equipQrScanModal = document.getElementById('equip-qr-scan-modal');
+    const closeEquipQrScanModal = document.getElementById('close-equip-qr-scan-modal');
+    let equipQrReader = null;
+    if (openEquipQrScanBtn && equipQrScanModal && closeEquipQrScanModal && window.Html5Qrcode) {
+        openEquipQrScanBtn.onclick = function() {
+            equipQrScanModal.style.display = 'flex';
+            equipQrScanModal.style.alignItems = 'center';
+            equipQrScanModal.style.justifyContent = 'center';
+            document.getElementById('equip-qr-scan-result').innerText = '';
+            if (!equipQrReader) {
+                equipQrReader = new Html5Qrcode('equip-qr-reader');
+            }
+            equipQrReader.start(
+                { facingMode: 'environment' },
+                { fps: 10, qrbox: 200 },
+                code => {
+                    document.getElementById('equip-qr-scan-result').innerText = 'Scanned: ' + code;
+                    try {
+                        const data = JSON.parse(code);
+                        document.getElementById('equip-qr-scan-result').innerHTML = `<b>Name:</b> ${data.name}<br><b>ID:</b> ${data.id}<br><b>User:</b> ${data.user}<br><b>Date:</b> ${data.date}`;
+                    } catch {
+                        document.getElementById('equip-qr-scan-result').innerText = 'Invalid QR code.';
+                    }
+                    setTimeout(() => {
+                        equipQrReader.stop().then(() => {
+                            // Optionally auto-close modal
+                        });
+                    }, 2000);
+                },
+                error => {
+                    console.error("EQUIP QR SCAN ERROR:", error);
+                }
+            ).catch(err => {
+                console.error("Camera start failed (equip QR):", err);
+                alert("Failed to start camera. Please check camera permissions or try another device.");
+            });
+        };
+        closeEquipQrScanModal.onclick = function() {
+            equipQrScanModal.style.display = 'none';
+            if (equipQrReader) {
+                equipQrReader.stop().catch(()=>{});
             }
         };
     }

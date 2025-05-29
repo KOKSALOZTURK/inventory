@@ -45,6 +45,16 @@
         <div id="serial-scan-result" style="margin-top:1rem;color:#2a5298;"></div>
     </div>
 </div>
+<!-- Add Scan Equipment QR Button and Modal -->
+<button id="open-equip-qr-scan" style="display:block;margin:2rem auto 0 auto;padding:0.7rem 1.5rem;background:#2a5298;color:#fff;border:none;border-radius:6px;font-size:1.1rem;font-weight:600;cursor:pointer;">Scan Equipment QR</button>
+<div id="equip-qr-scan-modal" style="display:none;position:fixed;left:0;top:0;right:0;bottom:0;background:rgba(0,0,0,0.25);z-index:3000;align-items:center;justify-content:center;">
+    <div style="background:#fff;border-radius:12px;padding:2rem;box-shadow:0 4px 24px rgba(42,82,152,0.12);position:relative;text-align:center;max-width:350px;margin:auto;">
+        <span id="close-equip-qr-scan-modal" style="position:absolute;right:1.2rem;top:1.2rem;font-size:1.5rem;color:#888;cursor:pointer;">&times;</span>
+        <h3>Scan Equipment QR</h3>
+        <div id="equip-qr-reader" style="width:260px;margin:auto;"></div>
+        <div id="equip-qr-scan-result" style="margin-top:1rem;color:#2a5298;"></div>
+    </div>
+</div>
 <div id="scan-section">
     <h3>Scan Equipment QR</h3>
     <div id="qr-reader" style="width:300px;"></div>
