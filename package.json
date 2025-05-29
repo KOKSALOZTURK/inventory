@@ -5,5 +5,8 @@
   },
   "devDependencies": {
     "html5-qrcode": "^2.3.8"
+  },
+  "scripts": {
+    "start": "node server.js"
   }
 }
