@@ -56,10 +56,10 @@ function waitForLibs(cb) {
 function setupInventoryFeatures() {
     console.log('setupInventoryFeatures triggered');
     console.log('setupInventoryFeatures: QRCode:', typeof QRCode, 'Html5Qrcode:', typeof Html5Qrcode);
-    // --- LocalStorage helpers replaced with API helpers ---
+    // --- LocalStorage helpers replaced with API helpers for Railway backend ---
     const getInventory = async () => {
         try {
-            const res = await fetch('/.netlify/functions/get-inventory');
+            const res = await fetch('/api/inventory');
             return await res.json();
         } catch {
             return [];
@@ -67,7 +67,7 @@ function setupInventoryFeatures() {
     };
     const setInventory = async (data) => {
         try {
-            await fetch('/.netlify/functions/set-inventory', {
+            await fetch('/api/inventory', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(data)
@@ -110,11 +110,20 @@ function setupInventoryFeatures() {
         const date = document.getElementById('assign-date').value;
         console.log('Form values:', { name, id, user, date });
         if (!name || !id || !user || !date) return;
-        const items = await getInventory();
+        let items = await getInventory();
         items.push({ name, id, user, date });
-        await setInventory(items);
-        renderList();
-        showQRModal({ name, id, user, date });
+        try {
+            await setInventory(items);
+            // Always re-fetch from backend to ensure sync
+            items = await getInventory();
+            renderList();
+            // Find the last item (just added) and show QR
+            const lastItem = items[items.length - 1];
+            if (lastItem) showQRModal(lastItem);
+        } catch (err) {
+            console.error('Error adding equipment:', err);
+            alert('Failed to add equipment. Please try again.');
+        }
         this.reset();
     });
 
