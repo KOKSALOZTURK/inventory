@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Inventory Tracker & QR Equipment Management</title>
+    <link rel="stylesheet" href="styles/main.css">
+</head>
+<body>
+    <header>
+        <h1>Inventory Tracker & QR Equipment Management</h1>
+        <nav>
+            <ul>
+                <li><a href="#home">Home</a></li>
+                <li><a href="#guide">How to Use</a></li>
+                <li><a href="#inventory">Inventory</a></li>
+            </ul>
+        </nav>
+    </header>
+    <main>
+        <section id="home" class="active-section">
+            <h2>Welcome!</h2>
+            <p>This app helps you track your IT equipment inventory using QR codes. Easily add, assign, and track assets for your organization. Works on both mobile and tablet devices.</p>
+            <img src="assets/illustration-home.svg" alt="Inventory Illustration" class="hero-img">
+        </section>
+        <section id="guide">
+            <h2>How to Use</h2>
+            <ol>
+                <li>Add new equipment with name, ID, user, and assignment date.</li>
+                <li>Generate a unique QR code for each equipment item.</li>
+                <li>Print and attach the QR code to the equipment.</li>
+                <li>Scan QR codes to check equipment in or out, or to update assignment.</li>
+                <li>View and manage your inventory from any device.</li>
+            </ol>
+            <p>Use the navigation above to get started!</p>
+        </section>
+        <section id="inventory">
+            <h2>Inventory Management</h2>
+            <div id="inventory-app"></div>
+        </section>
+    </main>
+    <footer>
+        <p>&copy; 2025 Inventory Tracker. All rights reserved.</p>
+    </footer>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
+    <script src="scripts/app.js"></script>
+</body>
+</html>
